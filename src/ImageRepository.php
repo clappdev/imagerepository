@@ -5,7 +5,6 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Storage;
 use InvalidArgumentException;
 use Intervention\Image\Facades\Image;
-use Carbon\Carbon;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use League\Flysystem\Adapter\Local as LocalAdapter;
 
@@ -54,21 +53,31 @@ class ImageRepository{
     public function getCacheDisk(){
         return $this->cacheDisk;
     }
-
+    /**
+     * save an image
+     * @param  binary|string|Image $imageContents the image
+     * @return string key to retrieve this image from the storage
+     */
     public function put($imageContents){
         if (empty($imageContents)){
             throw new InvalidArgumentException('missing image file');
         }
         $img = Image::make($imageContents);
 
-        $filename = sha1(str_random() . '_' . Carbon::now()) . '.jpg';
+        $filename = sha1(str_random() . '_' . time()) . '.jpg';
         $filepath = $this->convertFilenameToFilePath($filename);
 
         $this->storageDisk->put($filepath, (string)$img->encode('jpg'));
 
         return $filename;
     }
-
+    /**
+     * get a thumbnail to a previously saved image file
+     * @param  string  $filename the key returned by put()
+     * @param  integer $width    fit the image into this width (default: 500)
+     * @param  integer $height   fit the image into this height (default: 500)
+     * @return string path to the generated thumbnail file - can be dropped directly into laravel's asset() function
+     */
     public function get($filename, $width = 500, $height = 500){
 
         $sourceFilePath = $this->convertFilenameToFilePath($filename);
