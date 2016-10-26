@@ -1,0 +1,29 @@
+{
+  "name": "clapp/imagerepository",
+  "description": "",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Clapp",
+      "email": "hi@clapp.eu"
+    }
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "~4.8",
+    "fzaninotto/faker": "^1.6",
+    "satooshi/php-coveralls": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "Clapp\\ImageRepository\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "classmap": [
+      "tests"
+    ]
+  },
+  "require": {
+    "php": "^5.5.9"
+  }
+}
