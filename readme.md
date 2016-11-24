@@ -1,3 +1,5 @@
+clapp/imagerepository [![Build Status](https://travis-ci.org/clappcom/imagerepository.svg?branch=master)](https://travis-ci.org/clappcom/imagerepository) [![Coverage Status](https://coveralls.io/repos/github/clappcom/imagerepository/badge.svg?branch=master)](https://coveralls.io/github/clappcom/imagerepository?branch=master)
+
 Usage example
 ---
 
