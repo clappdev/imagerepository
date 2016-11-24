@@ -4,8 +4,9 @@ namespace Clapp\ImageRepository;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Storage;
 use InvalidArgumentException;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Intervention\Image\Exception\NotReadableException;
 use League\Flysystem\Adapter\Local as LocalAdapter;
 
 /**
@@ -16,13 +17,14 @@ class ImageRepository{
     protected $storagePrefix = null;
     protected $storageDisk = null;
     protected $cacheDisk = null;
+    protected $imageManager = null;
 
     /**
      * @param string $storagePrefix egy path prefix, amivel a storageDisken és a cacheDisken belül prefixelve lesz minden berakott kép url-e (pl. "user/profile-pictures/")
      * @param \Illuminate\Contracts\Filesystem\Filesystem $storageDisk   az eredeti képfájlok tárolási helye (nem kell publicnak lennie
      * @param \Illuminate\Contracts\Filesystem\Filesystem $cacheDisk     a thumbnailek tárolási helye (publicnak kell lennie)
      */
-    public function __construct($storagePrefix = "", $storageDisk = null, $cacheDisk = null){
+    public function __construct($storagePrefix = "", Filesystem $storageDisk = null, Filesystem $cacheDisk = null, ImageManager $imageManager = null){
         if (!empty($storagePrefix)){
             if (!ends_with($storagePrefix, "/")){
                 $storagePrefix .= "/";
@@ -31,22 +33,46 @@ class ImageRepository{
         $this->storagePrefix = $storagePrefix;
 
         if ($storageDisk == null){
-            if (class_exists("Storage")){
-                $storageDisk = Storage::disk();
-            }else{
-                throw new InvalidArgumentException('missing $storageDisk');
-            }
+            $storageDisk = $this->getDefaultStorageDisk();
         }
         if ($cacheDisk == null){
-            if (class_exists("Storage")){
-                $cacheDisk = Storage::disk();
-            }else{
-                throw new InvalidArgumentException('missing $cacheDisk');
-            }
+            $cacheDisk = $this->getDefaultCacheDisk();
+        }
+        if ($imageManager == null){
+            $imageManager = $this->getDefaultImageManager();
         }
 
         $this->setStorageDisk($storageDisk);
         $this->setCacheDisk($cacheDisk);
+        $this->setImageManager($imageManager);
+    }
+
+    protected function getDefaultStorageDisk(){
+        if (class_exists("Storage")){
+            return Storage::disk();
+        }else{
+            throw new InvalidArgumentException('missing $storageDisk');
+        }
+    }
+
+    protected function getDefaultCacheDisk(){
+        if (class_exists("Storage")){
+            return Storage::disk();
+        }else{
+            throw new InvalidArgumentException('missing $cacheDisk');
+        }
+    }
+
+    protected function getDefaultImageManager(){
+        return new ImageManager(array('driver' => 'gd'));
+    }
+
+    public function setImageManager(ImageManager $imageManager){
+        $this->imageManager = $imageManager;
+    }
+
+    public function getImageManager(){
+        return $this->imageManager;
     }
 
     public function setStorageDisk(Filesystem $disk){
@@ -70,7 +96,7 @@ class ImageRepository{
         if (empty($imageContents)){
             throw new InvalidArgumentException('missing image file');
         }
-        $img = Image::make($imageContents);
+        $img = $this->imageManager->make($imageContents);
 
         $filename = sha1(str_random() . '_' . time()) . '.jpg';
         $filepath = $this->convertFilenameToFilePath($filename);
@@ -108,11 +134,15 @@ class ImageRepository{
                     $filename = basename($filename);
                     $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.jpg');
                 }else {
-                    throw $e;
+                    throw new ImageMissingOrInvalidException("", 0, $e);
                 }
             }
             if(!$this->cacheDisk->has($targetFilePath)){
-                $img = (string) Image::make($imageContents)->fit($width, $height)->encode('jpg');
+                try {
+                    $img = (string) $this->imageManager->make($imageContents)->fit($width, $height)->encode('jpg');
+                }catch(NotReadableException $e){
+                    throw new ImageMissingOrInvalidException("", 0, $e);
+                }
                 $this->cacheDisk->put($targetFilePath, $img);
             }
         }
