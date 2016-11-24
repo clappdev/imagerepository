@@ -76,7 +76,7 @@ Returns:
 
 Params:
 
-- `$key`: `string` key from `put()`
+- `$key`: `string` key from `put()` OR an absolute path to an image file on your local disk (for placeholders)
 - `$width`: `int` fit the image into this width (default: 500)
 - `$height`: `int` fit the image into this height (default: 500)
 
