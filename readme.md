@@ -43,9 +43,9 @@ class User {
 API reference
 ---
 
-- [`ImageRepository::__construct($storagePrefix = "", $storageDisk = null, $cacheDisk = null, ImageManager $imageManager = null)`](#a)
-- [`ImageRepository::put($imageContents)`](#imagerepository--put--imagecontents)
-- [`ImageRepository::get($key, $width = 500, $height = 500)`](#a)
+- [`ImageRepository::__construct($storagePrefix = "", $storageDisk = null, $cacheDisk = null, ImageManager $imageManager = null)`](#imagerepository__constructstorageprefix---storagedisk--null-cachedisk--null-imagemanager-imagemanager--null)
+- [`ImageRepository::put($imageContents)`](#imagerepositoryputimagecontents)
+- [`ImageRepository::get($key, $width = 500, $height = 500)`](#imagerepositorygetkey-width--500-height--500)
 - `ImageRepository::remove($key)`
 - `ImageRepository::flush()`
 
