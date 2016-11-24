@@ -52,6 +52,8 @@ class ImageRepositoryTest extends TestCase{
         $repo->setCacheDisk($cacheDisk2);
         $this->assertSame($repo->getCacheDisk(), $cacheDisk2);
         $this->assertNotSame($repo->getCacheDisk(), $cacheDisk);
+
+        $this->assertNotNull($repo->getImageManager());
     }
 
     /**
@@ -133,6 +135,25 @@ class ImageRepositoryTest extends TestCase{
         $cacheDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
         $repo = new ImageRepository("", $storageDisk, $cacheDisk);
         $repo->flush();
+    }
+    public function testThumbnail(){
+        $storageDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $cacheDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $repo = new ImageRepository("", $storageDisk, $cacheDisk);
+
+        $image = $repo->get(__DIR__ . "/cat.jpg");
+        $this->assertNotEmpty($image);
+    }
+    /**
+     * @expectedException Clapp\ImageRepository\ImageMissingOrInvalidException
+     */
+    public function testThumbnailMissingFile(){
+        $storageDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $cacheDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $repo = new ImageRepository("", $storageDisk, $cacheDisk);
+
+        $image = $repo->get(__DIR__ . "/missingfile.jpg");
+        $this->assertNotEmpty($image);
     }
 
 
