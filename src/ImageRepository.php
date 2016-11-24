@@ -31,10 +31,18 @@ class ImageRepository{
         $this->storagePrefix = $storagePrefix;
 
         if ($storageDisk == null){
-            $storageDisk = Storage::disk();
+            if (class_exists("Storage")){
+                $storageDisk = Storage::disk();
+            }else{
+                throw new InvalidArgumentException('missing $storageDisk');
+            }
         }
         if ($cacheDisk == null){
-            $cacheDisk = Storage::disk('picture_cache');
+            if (class_exists("Storage")){
+                $cacheDisk = Storage::disk();
+            }else{
+                throw new InvalidArgumentException('missing $cacheDisk');
+            }
         }
 
         $this->setStorageDisk($storageDisk);
