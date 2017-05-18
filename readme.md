@@ -4,7 +4,7 @@ clapp/imagerepository [![Build Status](https://travis-ci.org/clappcom/imagerepos
 Usage example (in Laravel)
 ---
 
-```
+```php
 
 use Clapp\ImageRepository\ImageRepository;
 use Clapp\ImageRepository\ImageMissingOrInvalidException;
