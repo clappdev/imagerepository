@@ -82,6 +82,37 @@ class ImageRepositoryTest extends TestCase{
             'key' => $key,
         ];
     }
+    public function testPutValidPngFile(){
+        $storageDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $cacheDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $key = $repo->put($this->getDummyImage("png"));
+        $this->assertNotEmpty($key);
+
+        return [
+            'storageDisk' => $repo->getStorageDisk(),
+            'cacheDisk' => $repo->getCacheDisk(),
+            'key' => $key,
+        ];
+    }
+
+    public function testPutValidGifFile(){
+        $storageDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $cacheDisk = new FilesystemAdapter(new Filesystem(new MemoryAdapter()));
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $key = $repo->put($this->getDummyImage("gif"));
+        $this->assertNotEmpty($key);
+
+        return [
+            'storageDisk' => $repo->getStorageDisk(),
+            'cacheDisk' => $repo->getCacheDisk(),
+            'key' => $key,
+        ];
+    }
     /**
      * @expectedException Clapp\ImageRepository\ImageMissingOrInvalidException
      */

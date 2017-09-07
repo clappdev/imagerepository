@@ -8,6 +8,7 @@ use Intervention\Image\ImageManager;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Intervention\Image\Exception\NotReadableException;
 use League\Flysystem\Adapter\Local as LocalAdapter;
+use Intervention\Image\Image;
 
 /**
  * képeket tárol el a storageDisk-en és thumbnaileket generál belőlük a cacheDisk-re
@@ -87,21 +88,72 @@ class ImageRepository{
     public function getCacheDisk(){
         return $this->cacheDisk;
     }
+    protected function guessFileExtension($image){
+        if ($image instanceof Image){
+            switch($image->mime()){
+                case 'image/png':
+                    return 'png';
+                break;
+                case 'image/gif':
+                    return 'png';
+                break;
+                case 'image/jpeg':
+                case 'image/pjpeg':
+                default:
+                    return 'jpg';
+                break;
+            }
+        }else {
+            return pathinfo($image, PATHINFO_EXTENSION);
+        }
+    }
+    protected function getEncodeImageFormat($image){
+        if ($image instanceof Image){
+            switch($image->mime()){
+                case 'image/png':
+                    return 'png';
+                break;
+                case 'image/gif':
+                    return 'png';
+                break;
+                case 'image/jpeg':
+                case 'image/pjpeg':
+                default:
+                    return 'jpg';
+                break;
+            }
+        }else {
+            switch (pathinfo($image, PATHINFO_EXTENSION)){
+                case 'png':
+                case 'gif':
+                    return 'png';
+                break;
+                case 'jpg':
+                case 'jpeg':
+                default:
+                    return 'jpg';
+                break;
+            }
+        }
+    }
     /**
      * save an image
      * @param  binary|string|Image $imageContents the image
      * @return string key to retrieve this image from the storage
      */
-    public function put($imageContents){
+    public function put($imageContents, $options = []){
         if (empty($imageContents)){
             throw new InvalidArgumentException('missing image file');
         }
         $img = $this->imageManager->make($imageContents);
 
-        $filename = sha1(str_random() . '_' . time()) . '.jpg';
+        $extension = $this->guessFileExtension($img);
+        $encodingFormat = $this->getEncodeImageFormat($img);
+
+        $filename = sha1(str_random() . '_' . time()) . '.' . $extension;
         $filepath = $this->convertFilenameToFilePath($filename);
 
-        $this->storageDisk->put($filepath, (string)$img->encode('jpg'));
+        $this->storageDisk->put($filepath, (string)$img->encode($encodingFormat));
 
         return $filename;
     }
@@ -114,8 +166,11 @@ class ImageRepository{
      */
     public function get($filename, $width = 500, $height = 500){
 
+        $extension = $this->guessFileExtension($filename);
+        $encodingFormat = $this->getEncodeImageFormat($filename);
+
         $sourceFilePath = $this->convertFilenameToFilePath($filename);
-        $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.jpg');
+        $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.'.$extension);
 
         if(!$this->cacheDisk->has($targetFilePath))
         {
@@ -132,14 +187,14 @@ class ImageRepository{
                 if (!empty($filename) && file_exists($filename)){
                     $imageContents = file_get_contents($filename);
                     $filename = basename($filename);
-                    $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.jpg');
+                    $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.'.$extension);
                 }else {
                     throw new ImageMissingOrInvalidException("", 0, $e);
                 }
             }
             if(!$this->cacheDisk->has($targetFilePath)){
                 try {
-                    $img = (string) $this->imageManager->make($imageContents)->fit($width, $height)->encode('jpg');
+                    $img = (string) $this->imageManager->make($imageContents)->fit($width, $height)->encode($encodingFormat);
                 }catch(NotReadableException $e){
                     throw new ImageMissingOrInvalidException("", 0, $e);
                 }
