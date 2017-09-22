@@ -9,6 +9,7 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Intervention\Image\Exception\NotReadableException;
 use League\Flysystem\Adapter\Local as LocalAdapter;
 use Intervention\Image\Image;
+use Closure;
 
 /**
  * képeket tárol el a storageDisk-en és thumbnaileket generál belőlük a cacheDisk-re
@@ -157,20 +158,45 @@ class ImageRepository{
 
         return $filename;
     }
+    protected function defaultTransformId($width, $height){
+        return  '_' . $width . 'x' . $height;
+    }
+    protected function defaultTransform(Image $image, $width, $height){
+        return $image->fit($width, $height);
+    }
+
     /**
      * get a thumbnail to a previously saved image file
      * @param  string  $filename the key returned by put()
      * @param  integer $width    fit the image into this width (default: 500)
      * @param  integer $height   fit the image into this height (default: 500)
+     * @param  Closure $width    use this function to apply custom transformations to the image
+     * @param  Closure $height   use this function to generate a unique string for the custom transformation - the same transformation should have the same unique string
      * @return string path to the generated thumbnail file - can be dropped directly into laravel's asset() function
      */
     public function get($filename, $width = 500, $height = 500){
+
+        if ($width instanceof Closure){
+            $transform = $width;
+            if (!$height instanceof Closure){
+                throw new InvalidArgumentException("missing transformId function");
+            }
+            $transformId = $height;
+        }else {
+            $self = $this;
+            $transform = function(Image $image) use ($width, $height, $self){
+                return $self->defaultTransform($image, $width, $height);
+            };
+            $transformId = function() use ($width, $height, $self){
+                return $self->defaultTransformId($width, $height);
+            };
+        }
 
         $extension = $this->guessFileExtension($filename);
         $encodingFormat = $this->getEncodeImageFormat($filename);
 
         $sourceFilePath = $this->convertFilenameToFilePath($filename);
-        $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.'.$extension);
+        $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId() . '.'.$extension);
 
         if(!$this->cacheDisk->has($targetFilePath))
         {
@@ -187,14 +213,16 @@ class ImageRepository{
                 if (!empty($filename) && file_exists($filename)){
                     $imageContents = file_get_contents($filename);
                     $filename = basename($filename);
-                    $targetFilePath = $this->convertFilenameToFilePath($filename . '_' . $width . 'x' . $height .'.'.$extension);
+                    $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId() .'.'.$extension);
                 }else {
                     throw new ImageMissingOrInvalidException("", 0, $e);
                 }
             }
             if(!$this->cacheDisk->has($targetFilePath)){
                 try {
-                    $img = (string) $this->imageManager->make($imageContents)->fit($width, $height)->encode($encodingFormat);
+                    $instance = $this->imageManager->make($imageContents);
+                    $instance = $transform($instance);
+                    $img = (string) $instance->encode($encodingFormat);
                 }catch(NotReadableException $e){
                     throw new ImageMissingOrInvalidException("", 0, $e);
                 }

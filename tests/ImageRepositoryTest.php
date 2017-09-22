@@ -186,6 +186,44 @@ class ImageRepositoryTest extends TestCase{
         $image = $repo->get(__DIR__ . "/missingfile.jpg");
         $this->assertNotEmpty($image);
     }
+    /**
+     * @depends testPutValidFile
+     * @expectedException InvalidArgumentException
+     */
+    public function testCustomTransformMissingTransformIdFunction($data){
+        $storageDisk = $data['storageDisk'];
+        $cacheDisk = $data['cacheDisk'];
+        $key = $data['key'];
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $image = $repo->get($key, function($image){
+
+        });
+        $this->assertNotEmpty($image);
+    }
+    /**
+     * @depends testPutValidFile
+     */
+    public function testCustomTransform($data){
+        $storageDisk = $data['storageDisk'];
+        $cacheDisk = $data['cacheDisk'];
+        $key = $data['key'];
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $image = $repo->get($key, function($image){
+
+            $image->resize(500, 500, function($constraint){
+                $constraint->aspectRatio();
+            });
+
+            return $image;
+        }, function(){
+            return "foo";
+        });
+        $this->assertNotEmpty($image);
+    }
 
 
 }
