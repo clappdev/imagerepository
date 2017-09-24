@@ -83,3 +83,27 @@ Params:
 Returns:
 
 - `string` path to the generated image from the base of the $cacheDisk - can be put immediately into laravel's `asset()` function
+
+### `ImageRepository::get($key, Closure $transform, Closure $transformId)`
+
+Params:
+
+- `$key`: `string` key from `put()` OR an absolute path to an image file on your local disk (for placeholders)
+- `$transform`: `Closure` use this function to apply custom transformations to the image
+- `$transformId`: `Closure` use this function to generate a unique string for the custom transformation - the same transformation should have the same unique string
+
+Example:
+```php
+$image = $repo->get($key, function($image){
+    $image->resize(123, null, function($constraint){
+        $constraint->aspectRatio();
+    });
+    return $image;
+}, function(){
+    return "123_auto";
+});
+```
+
+Returns:
+
+- `string` path to the generated image from the base of the $cacheDisk - can be put immediately into laravel's `asset()` function
