@@ -204,6 +204,24 @@ class ImageRepositoryTest extends TestCase{
     }
     /**
      * @depends testPutValidFile
+     * @expectedException InvalidArgumentException
+     */
+    public function testCustomTransformInvalidTransformIdFunction($data){
+        $storageDisk = $data['storageDisk'];
+        $cacheDisk = $data['cacheDisk'];
+        $key = $data['key'];
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $image = $repo->get($key, function($image){
+
+        },function(){
+
+        });
+        $this->assertNotEmpty($image);
+    }
+    /**
+     * @depends testPutValidFile
      */
     public function testCustomTransform($data){
         $storageDisk = $data['storageDisk'];
@@ -223,6 +241,32 @@ class ImageRepositoryTest extends TestCase{
             return "foo";
         });
         $this->assertNotEmpty($image);
+    }
+    /**
+     * @depends testPutValidFile
+     */
+    public function testCustomTransformCorrectSize($data){
+        $storageDisk = $data['storageDisk'];
+        $cacheDisk = $data['cacheDisk'];
+        $key = $data['key'];
+        $rightPrefix = "profile-images";
+        $repo = new ImageRepository($rightPrefix, $storageDisk, $cacheDisk);
+
+        $image = $repo->get($key, function($image){
+
+            $image->resize(123, 321, function($constraint){
+                $constraint->aspectRatio();
+            });
+
+            return $image;
+        }, function(){
+            return "123x123";
+        });
+        $this->assertNotEmpty($image);
+
+        $img = (new \Intervention\Image\ImageManager(array('driver' => 'gd')))->make($cacheDisk->get($image));
+        $this->assertEquals(123, $img->width());
+        $this->assertEquals(123, $img->height());
     }
 
 

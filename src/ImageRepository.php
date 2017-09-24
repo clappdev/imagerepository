@@ -181,22 +181,28 @@ class ImageRepository{
             if (!$height instanceof Closure){
                 throw new InvalidArgumentException("missing transformId function");
             }
-            $transformId = $height;
+            $transformIdGetter = $height;
         }else {
             $self = $this;
             $transform = function(Image $image) use ($width, $height, $self){
                 return $self->defaultTransform($image, $width, $height);
             };
-            $transformId = function() use ($width, $height, $self){
+            $transformIdGetter = function() use ($width, $height, $self){
                 return $self->defaultTransformId($width, $height);
             };
+        }
+
+        $transformId = $transformIdGetter();
+
+        if (empty($transformId) || !is_string($transformId)){
+            throw new InvalidArgumentException("transformId function should return a unique string for the custom tranformation - the same transformation should have the same unique string");
         }
 
         $extension = $this->guessFileExtension($filename);
         $encodingFormat = $this->getEncodeImageFormat($filename);
 
         $sourceFilePath = $this->convertFilenameToFilePath($filename);
-        $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId() . '.'.$extension);
+        $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId . '.'.$extension);
 
         if(!$this->cacheDisk->has($targetFilePath))
         {
@@ -213,7 +219,7 @@ class ImageRepository{
                 if (!empty($filename) && file_exists($filename)){
                     $imageContents = file_get_contents($filename);
                     $filename = basename($filename);
-                    $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId() .'.'.$extension);
+                    $targetFilePath = $this->convertFilenameToFilePath($filename . $transformId .'.'.$extension);
                 }else {
                     throw new ImageMissingOrInvalidException("", 0, $e);
                 }
