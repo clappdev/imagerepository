@@ -12,7 +12,7 @@
     "phpunit/phpunit": "~4.8",
     "satooshi/php-coveralls": "dev-master",
     "league/flysystem-memory": "^1.0",
-    "illuminate/filesystem": "^5.2"
+    "illuminate/filesystem": "^6.2"
   },
   "autoload": {
     "psr-4": {
